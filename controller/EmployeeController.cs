@@ -102,6 +102,13 @@ namespace MyApp.Namespace
             
             return employees.FirstOrDefault(employee => employee.EMPLOYEE_ID == id);
         }
+
+        [HttpGet("/token")]
+        public string GenerateToken()
+        {
+            return TokenService.GenerateToken();
+
+        }
         
     }
 }

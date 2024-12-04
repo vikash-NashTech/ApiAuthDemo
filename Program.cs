@@ -1,3 +1,7 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -5,23 +9,55 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer",options => 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}
+)
+.AddJwtBearer(options => 
+{
+    
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.Authority = builder.Configuration["OAuth2:Authority"];
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        ValidateAudience = true,
+        ValidateIssuer = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidAudience = builder.Configuration["OAuth2:Audience"],
+        ValidIssuer = builder.Configuration["OAuth2:Authority"], 
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["SecretKey"]))  
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = context =>
         {
-            ValidateAudience = true,
-            ValidateIssuer = true,
-            ValidAudience = builder.Configuration["OAuth2:Audience"],
-            
-        };
-    });
+            Console.WriteLine($"Token validated successfully: {context.SecurityToken}");
+            return Task.CompletedTask;
+        },
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"Authentication failed: {context.Exception}");
+            return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            // Console.WriteLine($"Received Authorization Header: {context.Request.Headers["Authorization"]}");
+            // return Task.CompletedTask;
+            var authHeader = context.Request.Headers["Authorization"].ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Token = authHeader.Substring("Bearer ".Length).Trim();
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
 
 builder.Services.AddAuthorization(options => 
 {
     options.AddPolicy("ReadUsers", policy =>
-        policy.RequireClaim("scope", "read:data")
+        policy.RequireClaim("scope", "read")
     );
 });
     
@@ -34,6 +70,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }   
+app.Use(async (context, next) =>
+{
+    var authHeader = context.Request.Headers["Authorization"].ToString();
+    Console.WriteLine($"Authorization Header: {authHeader}");
+    await next();
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
