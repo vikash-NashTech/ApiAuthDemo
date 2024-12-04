@@ -7,14 +7,17 @@ using Microsoft.IdentityModel.Tokens;
 public  class TokenService
 {
     
-    public static string GenerateToken()
+    public static string GenerateToken(string scope)
     {
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("scope","read")
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             
         };
+        if(scope.Length>0)
+        {
+            claims.Add(new Claim("scope", scope));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Ghav8cc1L7CwYHnBGTMJtET99493/a1K6ElhDcn2zAc="));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
