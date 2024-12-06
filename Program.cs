@@ -42,8 +42,6 @@ builder.Services.AddAuthentication(options =>
         },
         OnMessageReceived = context =>
         {
-            // Console.WriteLine($"Received Authorization Header: {context.Request.Headers["Authorization"]}");
-            // return Task.CompletedTask;
             var authHeader = context.Request.Headers["Authorization"].ToString();
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             {
@@ -70,12 +68,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }   
-app.Use(async (context, next) =>
-{
-    var authHeader = context.Request.Headers["Authorization"].ToString();
-    Console.WriteLine($"Authorization Header: {authHeader}");
-    await next();
-});
 
 app.UseAuthentication();
 app.UseAuthorization();

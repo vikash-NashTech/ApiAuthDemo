@@ -109,6 +109,7 @@ namespace MyApp.Namespace
             return TokenService.GenerateToken("read");
 
         }
+        
         [HttpGet("/token-without-policy")]
         public string GenerateTokenWithOutPolicy()
         {
